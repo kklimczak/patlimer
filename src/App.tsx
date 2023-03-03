@@ -1,7 +1,5 @@
 import {createSignal, For} from "solid-js";
-import logo from "./assets/logo.svg";
 import { invoke } from "@tauri-apps/api/tauri";
-import "./App.scss";
 
 export interface Pilot {
     id: string,
@@ -22,8 +20,8 @@ function App() {
 
   return (
     <div class="container">
-        <input onChange={e => setNewPilotName(e.currentTarget.value)} value={newPilotName()}  />
-        <button onClick={() => addPilot()}>Add Pilot</button>
+        <input onChange={e => setNewPilotName(e.currentTarget.value)} value={newPilotName()} />
+        <button onClick={() => addPilot()} class="text-3xl">Add Pilot</button>
         <For each={pilots()}>
             {item => <span>{item.id} - {item.name}</span>}
         </For>
