@@ -1,49 +1,32 @@
-import { createSignal } from "solid-js";
+import {createSignal, For} from "solid-js";
 import logo from "./assets/logo.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.scss";
 
-function App() {
-  const [greetMsg, setGreetMsg] = createSignal("");
-  const [name, setName] = createSignal("");
+export interface Pilot {
+    id: string,
+    name: string,
+}
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name: name() }));
+function App() {
+    const [newPilotName, setNewPilotName] = createSignal("");
+  const [pilots, setPilots] = createSignal<Pilot[]>([]);
+
+  async function addPilot() {
+    await invoke<Pilot>("set_pilot", {pilot: {id: "", name: newPilotName()}})
+        .then(pilot => {
+            setPilots(oldPilots => ([...oldPilots, pilot]));
+            setNewPilotName("");
+        });
   }
 
   return (
     <div class="container">
-      <h1>Welcome to Tauri!</h1>
-
-      <div class="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={logo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-
-      <p>Click on the Tauri, Vite, and Solid logos to learn more.</p>
-
-      <div class="row">
-        <div>
-          <input
-            id="greet-input"
-            onChange={(e) => setName(e.currentTarget.value)}
-            placeholder="Enter a name..."
-          />
-          <button type="button" onClick={() => greet()}>
-            Greet
-          </button>
-        </div>
-      </div>
-
-      <p>{greetMsg}</p>
+        <input onChange={e => setNewPilotName(e.currentTarget.value)} value={newPilotName()}  />
+        <button onClick={() => addPilot()}>Add Pilot</button>
+        <For each={pilots()}>
+            {item => <span>{item.id} - {item.name}</span>}
+        </For>
     </div>
   );
 }
