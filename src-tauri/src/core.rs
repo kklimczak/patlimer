@@ -1,5 +1,6 @@
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::oneshot;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct Pilot {
@@ -43,9 +44,52 @@ impl State {
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+enum ResponseStatus {
+    Success, Failure
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct InvokeResponse<T> {
+    status: ResponseStatus,
+    data: T,
+}
+
+impl<T> InvokeResponse<T> {
+    fn success(data: T) -> InvokeResponse<T> {
+        InvokeResponse {
+            status: ResponseStatus::Success,
+            data
+        }
+    }
+
+    fn failure(data: T) -> InvokeResponse<T> {
+        InvokeResponse {
+            status: ResponseStatus::Failure,
+            data
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct InvokeRequest<T> {
+    body: T,
+    response_tx: oneshot::Sender<InvokeResponse<T>>
+}
+
+impl<T> InvokeRequest<T> {
+    pub fn new(body: T) -> (InvokeRequest<T>, oneshot::Receiver<InvokeResponse<T>>) {
+        let (sender, receiver) = oneshot::channel();
+        (InvokeRequest {
+            body,
+            response_tx: sender
+        }, receiver)
+    }
+}
+
 #[derive(Debug)]
 pub enum Actions {
-    AddPilot(Pilot)
+    AddPilot(InvokeRequest<Pilot>)
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -58,8 +102,9 @@ pub async fn update_state<R: tauri::Runtime>(state: &mut State, mut rx: Receiver
     while let Some(action) = rx.recv().await {
         dbg!(&action, &state);
         match action {
-            Actions::AddPilot(pilot) => {
-                state.pilots.push(pilot);
+            Actions::AddPilot(invoke_request) => {
+                state.pilots.push(invoke_request.body.clone());
+                invoke_request.response_tx.send(InvokeResponse::success(invoke_request.body)).unwrap();
             }
         }
         dbg!(&state);

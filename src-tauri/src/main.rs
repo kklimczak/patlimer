@@ -7,18 +7,22 @@ use std::sync::Arc;
 use tauri::{Manager, Window};
 use tokio::sync::{mpsc, Mutex};
 use tokio::sync::mpsc::Sender;
+use crate::core::{InvokeRequest, InvokeResponse};
 
 struct LocalState {
     dispatch: Arc<Mutex<Sender<core::Actions>>>,
 }
 
 #[tauri::command]
-async fn set_pilot(pilot: core::Pilot, state: tauri::State<'_, LocalState>) -> Result<core::Pilot, String> {
+async fn set_pilot(pilot: core::Pilot, state: tauri::State<'_, LocalState>) -> Result<InvokeResponse<core::Pilot>, ()> {
     println!("{:?}", pilot);
+    let (request, receiver) = InvokeRequest::new(pilot.clone());
     let mut lock = state.dispatch.lock().await;
-    lock.send(core::Actions::AddPilot(pilot.clone())).await
-        .map(|_| pilot)
+    lock.send(core::Actions::AddPilot(request)).await
         .map_err(|e1|e1.to_string())
+        .unwrap();
+
+    receiver.await.map_err(|e| ())
 }
 
 fn main() {
