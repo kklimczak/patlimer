@@ -2,15 +2,17 @@ use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
-    id: String,
     name: String,
 }
 
 #[derive(Debug)]
 enum RaceStatus {
-    New, InProgress, Interrupted, Finished,
+    New,
+    InProgress,
+    Interrupted,
+    Finished,
 }
 
 #[derive(Debug)]
@@ -44,67 +46,58 @@ impl State {
     }
 }
 
-#[derive(Debug, serde::Serialize)]
-enum ResponseStatus {
-    Success, Failure
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct InvokeResponse<T> {
-    status: ResponseStatus,
-    data: T,
-}
-
-impl<T> InvokeResponse<T> {
-    fn success(data: T) -> InvokeResponse<T> {
-        InvokeResponse {
-            status: ResponseStatus::Success,
-            data
-        }
-    }
-
-    fn failure(data: T) -> InvokeResponse<T> {
-        InvokeResponse {
-            status: ResponseStatus::Failure,
-            data
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct InvokeRequest<T> {
     body: T,
-    response_tx: oneshot::Sender<InvokeResponse<T>>
+    response_tx: oneshot::Sender<Result<T, ErrorMessage>>,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct ErrorMessage {
+    message: String,
 }
 
 impl<T> InvokeRequest<T> {
-    pub fn new(body: T) -> (InvokeRequest<T>, oneshot::Receiver<InvokeResponse<T>>) {
+    pub fn new(body: T) -> (InvokeRequest<T>, oneshot::Receiver<Result<T, ErrorMessage>>) {
         let (sender, receiver) = oneshot::channel();
-        (InvokeRequest {
-            body,
-            response_tx: sender
-        }, receiver)
+        (
+            InvokeRequest {
+                body,
+                response_tx: sender,
+            },
+            receiver,
+        )
     }
 }
 
 #[derive(Debug)]
 pub enum Actions {
-    AddPilot(InvokeRequest<Pilot>)
+    AddPilot(InvokeRequest<Pilot>),
 }
 
-#[derive(Clone, serde::Serialize)]
-struct ActionPayload<T> {
-    actionType: String,
-    data: T
-}
-
-pub async fn update_state<R: tauri::Runtime>(state: &mut State, mut rx: Receiver<Actions>, app_handle: &impl Manager<R>) {
+pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
     while let Some(action) = rx.recv().await {
         dbg!(&action, &state);
         match action {
             Actions::AddPilot(invoke_request) => {
-                state.pilots.push(invoke_request.body.clone());
-                invoke_request.response_tx.send(InvokeResponse::success(invoke_request.body)).unwrap();
+                if state.pilots.contains(&invoke_request.body) {
+                    invoke_request
+                        .response_tx
+                        .send(Err(ErrorMessage {
+                            message: format!(
+                                "Pilot with name '{}' already exists",
+                                invoke_request.body.name
+                            )
+                            .into(),
+                        }))
+                        .unwrap();
+                } else {
+                    state.pilots.push(invoke_request.body.clone());
+                    invoke_request
+                        .response_tx
+                        .send(Ok(invoke_request.body))
+                        .unwrap();
+                }
             }
         }
         dbg!(&state);

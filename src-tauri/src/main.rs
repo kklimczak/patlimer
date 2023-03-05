@@ -3,26 +3,30 @@
 
 mod core;
 
+use crate::core::{ErrorMessage, InvokeRequest};
 use std::sync::Arc;
 use tauri::{Manager, Window};
-use tokio::sync::{mpsc, Mutex};
 use tokio::sync::mpsc::Sender;
-use crate::core::{InvokeRequest, InvokeResponse};
+use tokio::sync::{mpsc, Mutex};
 
 struct LocalState {
     dispatch: Arc<Mutex<Sender<core::Actions>>>,
 }
 
 #[tauri::command]
-async fn set_pilot(pilot: core::Pilot, state: tauri::State<'_, LocalState>) -> Result<InvokeResponse<core::Pilot>, ()> {
+async fn set_pilot(
+    pilot: core::Pilot,
+    state: tauri::State<'_, LocalState>,
+) -> Result<core::Pilot, ErrorMessage> {
     println!("{:?}", pilot);
     let (request, receiver) = InvokeRequest::new(pilot.clone());
     let mut lock = state.dispatch.lock().await;
-    lock.send(core::Actions::AddPilot(request)).await
-        .map_err(|e1|e1.to_string())
+    lock.send(core::Actions::AddPilot(request))
+        .await
+        .map_err(|e1| e1.to_string())
         .unwrap();
 
-    receiver.await.map_err(|e| ())
+    receiver.await.unwrap()
 }
 
 fn main() {
@@ -32,7 +36,9 @@ fn main() {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![set_pilot])
-        .manage(LocalState {dispatch: Arc::new(Mutex::new(dispatch.clone()))})
+        .manage(LocalState {
+            dispatch: Arc::new(Mutex::new(dispatch.clone())),
+        })
         .setup(|app| {
             #[cfg(debug_assertions)]
             {
@@ -41,10 +47,10 @@ fn main() {
                 window.close_devtools();
             }
 
-            let app_handle = app.handle();
+            // let app_handle = app.handle();
 
             tauri::async_runtime::spawn(async move {
-                core::update_state(&mut state, listener, &app_handle).await;
+                core::update_state(&mut state, listener).await;
             });
 
             Ok(())

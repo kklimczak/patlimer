@@ -2,10 +2,6 @@ import {createSignal, For} from "solid-js";
 import { invoke } from "@tauri-apps/api/tauri";
 import {LeftSidebar} from "./components/LeftSidebar";
 
-export interface InvokeResponse<T> {
-    status: "Success" | "Failure";
-    data: T;
-}
 export interface Pilot {
     id: string,
     name: string,
@@ -16,12 +12,12 @@ function App() {
   const [pilots, setPilots] = createSignal<Pilot[]>([]);
 
   async function addPilot() {
-    await invoke<InvokeResponse<Pilot>>("set_pilot", {pilot: {id: "", name: newPilotName()}})
-        .then(({data}) => {
-            console.log(data);
-            setPilots(oldPilots => ([...oldPilots, data]));
+    await invoke<Pilot>("set_pilot", {pilot: {id: "", name: newPilotName()}})
+        .then((pilot) => {
+            console.log(pilot);
+            setPilots(oldPilots => ([...oldPilots, pilot]));
             setNewPilotName("");
-        });
+        }).catch(console.log);
   }
 
   return (
