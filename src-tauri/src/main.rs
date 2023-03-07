@@ -29,13 +29,28 @@ async fn set_pilot(
     receiver.await.unwrap()
 }
 
+#[tauri::command]
+async fn add_race(
+    new_race_dto: core::NewRaceDto,
+    state: tauri::State<'_, LocalState>
+) -> Result<core::Race, ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(new_race_dto.clone());
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::AddRace(request))
+        .await
+        .map_err(|e1| e1.to_string())
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
 fn main() {
     let mut state = core::State::init();
 
     let (dispatch, listener) = mpsc::channel(5);
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_pilot])
+        .invoke_handler(tauri::generate_handler![set_pilot, add_race])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),
         })

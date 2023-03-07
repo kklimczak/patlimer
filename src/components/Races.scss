@@ -1,0 +1,13 @@
+.races-root {
+  display: flex;
+  flex-flow: row nowrap;
+}
+
+.races {
+  display: flex;
+  flex-flow: column nowrap;
+  &__slots {
+    display: flex;
+    flex-flow: column nowrap;
+  }
+}
