@@ -8,6 +8,8 @@ const channels = ["R1", "R3", "R6", "R7"];
 export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: string) => void}) {
     const [newPilotName, setNewPilotName] = createSignal("");
 
+    const [races, setRaces] = createSignal<Race[]>([]);
+
     const [slots, setSlots] = createSignal<Slot[]>([]);
 
     const addPilot = (event: Event) => {
@@ -45,8 +47,10 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
             pilot
         }));
         
-        invoke('add_race', { newRaceDto: {name: "Heat name", heats}satisfies NewRaceDto})
-            .then(console.log);
+        invoke<Race>('add_race', { newRaceDto: {name: "Heat name", heats}satisfies NewRaceDto})
+            .then((newRace: Race) => {
+                setRaces(oldRaces => ([...oldRaces, newRace]))
+            });
     }
 
     return (<div class="races-root">
@@ -57,13 +61,20 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
                 <button type="submit">Add Pilot</button>
             </form>
             <ul>
-                <For each={props.pilots}>
+                <For each={props.pilots} fallback={<span>No added pilots</span>}>
                     {(item) => <li>{item.name}</li>}
                 </For>
             </ul>
         </div>
         <div class="races">
             <h2>Races</h2>
+            <ul>
+                <For each={races()} fallback={<span>No added races</span>}>
+                    {(item) => <li>{item.name} - <For each={item.heats}>
+                        {heat => <span>{heat.channel}:{heat.pilot.name}</span>}
+                    </For></li>}
+                </For>
+            </ul>
             <h3>New race</h3>
             <button disabled={slots().length >= 4} onClick={() => addSlot()}>Add slot</button>
             <div class="races__slots">
