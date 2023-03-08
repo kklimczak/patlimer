@@ -3,6 +3,8 @@
 
 mod core;
 
+use std::fs::File;
+use std::io::{ErrorKind, Read, Write};
 use crate::core::{ErrorMessage, InvokeRequest};
 use std::sync::Arc;
 use tauri::{Manager, Window};
@@ -46,6 +48,16 @@ async fn add_race(
 
 fn main() {
     let mut state = core::State::init();
+
+    let mut db = match File::open("./db.txt") {
+        Ok(f) => {f},
+        Err(e) => match e.kind() {
+            ErrorKind::NotFound => {
+                File::create("./db.txt").unwrap()
+            },
+            _ => panic!("Can not open the db")
+        }
+    };
 
     let (dispatch, listener) = mpsc::channel(5);
 
