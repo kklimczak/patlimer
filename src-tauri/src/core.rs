@@ -7,7 +7,7 @@ pub struct Pilot {
     name: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 enum RaceStatus {
     New,
     InProgress,
@@ -22,7 +22,7 @@ struct Heat {
     pilot: Pilot,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Race {
     id: String,
     name: String,
@@ -36,7 +36,7 @@ pub struct NewRaceDto {
     heats: Vec<Heat>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct State {
     upcoming_races: Vec<Race>,
     current_race: Option<Race>,

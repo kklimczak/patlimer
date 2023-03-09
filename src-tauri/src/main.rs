@@ -49,15 +49,25 @@ async fn add_race(
 fn main() {
     let mut state = core::State::init();
 
-    let mut db = match File::open("./db.txt") {
+    let mut dbFile = match File::open("./db.txt") {
         Ok(f) => {f},
         Err(e) => match e.kind() {
             ErrorKind::NotFound => {
-                File::create("./db.txt").unwrap()
+                let f = File::create("./db.txt").unwrap();
+                f.try_clone().unwrap().write_all(serde_json::to_string(&state).unwrap().as_bytes()).unwrap();
+                f
             },
             _ => panic!("Can not open the db")
         }
     };
+
+    let mut dbString = String::new();
+
+    dbFile.read_to_string(&mut dbString).unwrap();
+
+    let db: core::State = serde_json::from_str(dbString.as_str()).unwrap();
+
+    dbg!(db);
 
     let (dispatch, listener) = mpsc::channel(5);
 
