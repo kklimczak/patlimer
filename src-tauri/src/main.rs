@@ -16,6 +16,20 @@ struct LocalState {
 }
 
 #[tauri::command]
+async fn init(
+    state: tauri::State<'_, LocalState>
+) -> Result<core::State, ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(());
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::Init(request))
+        .await
+        .map_err(|e1| { e1.to_string() })
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
+#[tauri::command]
 async fn set_pilot(
     pilot: core::Pilot,
     state: tauri::State<'_, LocalState>,
@@ -49,7 +63,7 @@ async fn add_race(
 fn main() {
     let mut state = core::State::init();
 
-    let mut dbFile = match File::open("./db.txt") {
+    let mut db_file = match File::open("./db.txt") {
         Ok(f) => {f},
         Err(e) => match e.kind() {
             ErrorKind::NotFound => {
@@ -61,18 +75,18 @@ fn main() {
         }
     };
 
-    let mut dbString = String::new();
+    let mut db_string = String::new();
 
-    dbFile.read_to_string(&mut dbString).unwrap();
+    db_file.read_to_string(&mut db_string).unwrap();
 
-    let db: core::State = serde_json::from_str(dbString.as_str()).unwrap();
+    let db: core::State = serde_json::from_str(db_string.as_str()).unwrap();
 
-    dbg!(db);
+    state = db;
 
     let (dispatch, listener) = mpsc::channel(5);
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_pilot, add_race])
+        .invoke_handler(tauri::generate_handler![set_pilot, add_race, init])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),
         })

@@ -36,7 +36,7 @@ pub struct NewRaceDto {
     heats: Vec<Heat>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct State {
     upcoming_races: Vec<Race>,
     current_race: Option<Race>,
@@ -79,6 +79,7 @@ impl<T, K> InvokeRequest<T, K> {
 
 #[derive(Debug)]
 pub enum Actions {
+    Init(InvokeRequest<(), State>),
     AddPilot(InvokeRequest<Pilot, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
 }
@@ -87,6 +88,12 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
     while let Some(action) = rx.recv().await {
         dbg!(&action, &state);
         match action {
+            Actions::Init(invoke_request) => {
+                invoke_request
+                    .response_tx
+                    .send(Ok(state.clone()))
+                    .unwrap();
+            }
             Actions::AddPilot(invoke_request) => {
                 if state.pilots.contains(&invoke_request.body) {
                     invoke_request
