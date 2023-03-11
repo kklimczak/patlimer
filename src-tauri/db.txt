@@ -1,1 +1,1 @@
-{"upcoming_races":[],"current_race":null,"pilots":[]}
+{"upcoming_races":[],"current_race":null,"pilots":[],"race_events":[]}
