@@ -2,10 +2,13 @@ import "./Races.scss";
 import {Heat, NewRaceDto, Pilot, Race, Slot} from "../models";
 import {createSignal, For} from "solid-js";
 import {invoke} from "@tauri-apps/api/tauri";
+import {useAppState} from "../store";
 
 const channels = ["R1", "R3", "R6", "R7"];
 
-export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: string) => void}) {
+export function Races() {
+    const [state, {pilot: {addOne}}] = useAppState();
+
     const [newPilotName, setNewPilotName] = createSignal("");
 
     const [races, setRaces] = createSignal<Race[]>([]);
@@ -14,7 +17,7 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
 
     const addPilot = (event: Event) => {
         event.preventDefault();
-        props.onNewPilotAdded(newPilotName());
+        addOne(newPilotName());
         setNewPilotName("");
     }
 
@@ -37,7 +40,7 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
     }
 
     const updatePilot = (index: number, pilotName: string) => {
-        updateSlot(index, {pilot: props.pilots.find(pilot => pilot.name === pilotName)});
+        updateSlot(index, {pilot: state.pilots.find(pilot => pilot.name === pilotName)});
     }
 
     const addRace = () => {
@@ -61,7 +64,7 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
                 <button type="submit">Add Pilot</button>
             </form>
             <ul>
-                <For each={props.pilots} fallback={<span>No added pilots</span>}>
+                <For each={state.pilots} fallback={<span>No added pilots</span>}>
                     {(item) => <li>{item.name}</li>}
                 </For>
             </ul>
@@ -89,7 +92,7 @@ export function Races(props: {pilots: Pilot[], onNewPilotAdded: (pilotName: stri
                         </select>
                         <select value={item?.pilot.name} onChange={e => updatePilot(index(), e.currentTarget.value)}>
                             <option value="">-- Select pilot --</option>
-                            <For each={props.pilots}>
+                            <For each={state.pilots}>
                                 {pilot => <option value={pilot.name}>{pilot.name}</option>}
                             </For>
                         </select>
