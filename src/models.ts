@@ -26,3 +26,13 @@ export interface Slot {
     channel: string;
     pilot: Pilot;
 }
+
+export interface RaceEvent {
+    name: string;
+    race_event_type: "Local" | "Cloud";
+    created_at: string;
+}
+
+export interface NewRaceEventDto {
+    name: string;
+}

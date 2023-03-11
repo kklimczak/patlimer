@@ -1,6 +1,8 @@
+use chrono::{DateTime, Utc};
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
+use chrono::serde::ts_microseconds;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
@@ -37,10 +39,39 @@ pub struct NewRaceDto {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum RaceEventType {
+    Local, Cloud
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RaceEvent {
+    name: String,
+    race_event_type: RaceEventType,
+    #[serde(with = "ts_microseconds")]
+    created_at: DateTime<Utc>,
+}
+
+impl RaceEvent {
+    pub fn new(name: String) -> RaceEvent {
+        RaceEvent {
+            name,
+            race_event_type: RaceEventType::Local,
+            created_at: Utc::now(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct NewRaceEventDto {
+    name: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct State {
     upcoming_races: Vec<Race>,
     current_race: Option<Race>,
     pilots: Vec<Pilot>,
+    race_events: Vec<RaceEvent>,
 }
 
 impl State {
@@ -49,6 +80,7 @@ impl State {
             upcoming_races: Vec::new(),
             current_race: None,
             pilots: Vec::new(),
+            race_events: Vec::new(),
         }
     }
 }
@@ -80,6 +112,7 @@ impl<T, K> InvokeRequest<T, K> {
 #[derive(Debug)]
 pub enum Actions {
     Init(InvokeRequest<(), State>),
+    CreateRaceEvent(InvokeRequest<NewRaceEventDto, RaceEvent>),
     AddPilot(InvokeRequest<Pilot, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
 }
@@ -93,6 +126,21 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                     .response_tx
                     .send(Ok(state.clone()))
                     .unwrap();
+            }
+            Actions::CreateRaceEvent(invoke_request) => {
+                if invoke_request.body.name.len() > 0 {
+                    let new_race_event = RaceEvent::new(invoke_request.body.name);
+                    state.race_events.push(new_race_event.clone());
+                    invoke_request.response_tx
+                        .send(Ok(new_race_event))
+                        .unwrap();
+                } else {
+                    invoke_request
+                        .response_tx
+                        .send(Err(ErrorMessage {
+                            message: format!("Missing 'name' property in RaceEvent").into()
+                        })).unwrap();
+                }
             }
             Actions::AddPilot(invoke_request) => {
                 if state.pilots.contains(&invoke_request.body) {

@@ -1,14 +1,16 @@
 import {Accessor, createContext, ParentProps, useContext} from "solid-js";
 import {createStore} from "solid-js/store";
-import {Heat, NewRaceDto, Pilot, Race} from "./models";
+import {Heat, NewRaceDto, Pilot, Race, RaceEvent} from "./models";
 import {invoke} from "@tauri-apps/api/tauri";
 
 export const initialState: State = {
+    raceEvents: [],
     pilots: [],
     races: []
 }
 
 export interface State {
+    raceEvents: RaceEvent[];
     pilots: Pilot[];
     races: Race[];
 }
@@ -17,6 +19,14 @@ function stateProviderFactory (initialState: State) {
     const [state, setState] = createStore<State>(initialState);
 
     const methods = {
+        raceEvents: {
+            addOne(eventName: string) {
+                invoke<RaceEvent>("create_race_event", {newRaceEventDto: {name: eventName}})
+                    .then((raceEvent) => {
+                        setState("raceEvents", raceEvents => ([...raceEvents, raceEvent]));
+                    })
+            }
+        },
         pilots: {
             addOne(pilotName: string) {
                 invoke<Pilot>("set_pilot", {pilot: {name: pilotName}})

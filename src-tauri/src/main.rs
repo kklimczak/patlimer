@@ -30,6 +30,21 @@ async fn init(
 }
 
 #[tauri::command]
+async fn create_race_event(
+    new_race_event_dto: core::NewRaceEventDto,
+    state: tauri::State<'_, LocalState>,
+) -> Result<core::RaceEvent, ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(new_race_event_dto.clone());
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::CreateRaceEvent(request))
+        .await
+        .map_err(|e1| {e1.to_string()})
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
+#[tauri::command]
 async fn set_pilot(
     pilot: core::Pilot,
     state: tauri::State<'_, LocalState>,
@@ -86,7 +101,7 @@ fn main() {
     let (dispatch, listener) = mpsc::channel(5);
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_pilot, add_race, init])
+        .invoke_handler(tauri::generate_handler![set_pilot, add_race, init, create_race_event])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),
         })
