@@ -50,6 +50,9 @@ export function Races() {
         races.addOne(heats);
     }
 
+    const isRaceFormValid = () => slots().length && slots().every(slot => slot.channel && slot.pilot.name);
+
+
     return (<div class="races-root">
         <div class="pilots">
             <h2>Pilots</h2>
@@ -94,7 +97,7 @@ export function Races() {
                     </label>}
                 </For>
             </div>
-            <button onClick={() => addRace()}>Add race</button>
+            <button onClick={() => addRace()} disabled={!isRaceFormValid()}>Add race</button>
         </div>
     </div>)
 }
