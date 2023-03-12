@@ -28,6 +28,7 @@ export interface Slot {
 }
 
 export interface RaceEvent {
+    _id: string;
     name: string;
     race_event_type: "Local" | "Cloud";
     created_at: string;

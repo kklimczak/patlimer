@@ -3,6 +3,7 @@ use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 use chrono::serde::ts_microseconds;
+use bson::serde_helpers::serialize_object_id_as_hex_string;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
@@ -45,6 +46,8 @@ pub enum RaceEventType {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEvent {
+    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
+    _id: bson::oid::ObjectId,
     name: String,
     race_event_type: RaceEventType,
     #[serde(with = "ts_microseconds")]
@@ -54,6 +57,7 @@ pub struct RaceEvent {
 impl RaceEvent {
     pub fn new(name: String) -> RaceEvent {
         RaceEvent {
+            _id: bson::oid::ObjectId::new(),
             name,
             race_event_type: RaceEventType::Local,
             created_at: Utc::now(),
