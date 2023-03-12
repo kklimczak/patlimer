@@ -3,13 +3,13 @@ import {createSignal, Match, Switch} from "solid-js";
 import {invoke} from "@tauri-apps/api/tauri";
 import {Races} from "./components/Races";
 import {Pilot} from "./models";
-import {initialState, StateProvider} from "./store";
+import {initialState, StateProvider, useAppState} from "./store";
 import {Events} from "./components/Events";
 
 function App() {
     invoke('init').then(console.log);
 
-    const [tab, setTab] = createSignal("list" as "list" | "single");
+    const [state] = useAppState();
 
   return (
       <StateProvider initialState={initialState}>
@@ -17,10 +17,10 @@ function App() {
               <header class="header">PatLimer</header>
               <main class="main">
                   <Switch>
-                      <Match when={tab() === "list"}>
+                      <Match when={!state.selectedRaceEventId}>
                         <Events />
                       </Match>
-                      <Match when={tab() === "single"}>
+                      <Match when={state.selectedRaceEventId}>
                           <Races />
                       </Match>
                   </Switch>

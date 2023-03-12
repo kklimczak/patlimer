@@ -5,12 +5,14 @@ import {invoke} from "@tauri-apps/api/tauri";
 
 export const initialState: State = {
     raceEvents: [],
+    selectedRaceEventId: "",
     pilots: [],
     races: []
 }
 
 export interface State {
     raceEvents: RaceEvent[];
+    selectedRaceEventId: string;
     pilots: Pilot[];
     races: Race[];
 }
@@ -25,6 +27,9 @@ function stateProviderFactory (initialState: State) {
                     .then((raceEvent) => {
                         setState("raceEvents", raceEvents => ([...raceEvents, raceEvent]));
                     })
+            },
+            selectOne(id: string) {
+                setState(oldState => ({...oldState, selectedRaceEventId: id}) )
             }
         },
         pilots: {
