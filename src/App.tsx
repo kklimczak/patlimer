@@ -1,10 +1,9 @@
 import './App.scss';
-import {createSignal, Match, Switch} from "solid-js";
+import {Match, Switch} from "solid-js";
 import {invoke} from "@tauri-apps/api/tauri";
-import {Races} from "./components/Races";
-import {Pilot} from "./models";
 import {initialState, StateProvider, useAppState} from "./store";
 import {Events} from "./components/Events";
+import {Event} from "./components/Event";
 
 function App() {
     invoke('init').then(console.log);
@@ -21,7 +20,7 @@ function App() {
                         <Events />
                       </Match>
                       <Match when={state.selectedRaceEventId}>
-                          <Races />
+                          <Event />
                       </Match>
                   </Switch>
               </main>
