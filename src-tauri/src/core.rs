@@ -1,3 +1,4 @@
+use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -8,6 +9,8 @@ use bson::serde_helpers::serialize_object_id_as_hex_string;
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
     name: String,
+    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
+    raceEventId: ObjectId,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -28,6 +31,8 @@ struct Heat {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Race {
     id: String,
+    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
+    raceEventId: ObjectId,
     name: String,
     status: RaceStatus,
     heats: Vec<Heat>,
@@ -37,6 +42,8 @@ pub struct Race {
 pub struct NewRaceDto {
     name: String,
     heats: Vec<Heat>,
+    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
+    raceEventId: ObjectId,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -47,7 +54,7 @@ pub enum RaceEventType {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEvent {
     #[serde(serialize_with = "serialize_object_id_as_hex_string")]
-    _id: bson::oid::ObjectId,
+    _id: ObjectId,
     name: String,
     race_event_type: RaceEventType,
     #[serde(with = "ts_microseconds")]
@@ -57,7 +64,7 @@ pub struct RaceEvent {
 impl RaceEvent {
     pub fn new(name: String) -> RaceEvent {
         RaceEvent {
-            _id: bson::oid::ObjectId::new(),
+            _id: ObjectId::new(),
             name,
             race_event_type: RaceEventType::Local,
             created_at: Utc::now(),
@@ -172,6 +179,7 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                     heats: invoke_request.body.heats,
                     id: state.upcoming_races.len().to_string(),
                     status: RaceStatus::New,
+                    raceEventId: invoke_request.body.raceEventId
                 };
 
                 state.upcoming_races.push(new_race.clone());

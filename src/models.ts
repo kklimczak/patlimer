@@ -1,5 +1,6 @@
 export interface Pilot {
-    name: string,
+    name: string;
+    raceEventId: string;
 }
 
 export interface Heat {
@@ -15,11 +16,13 @@ export interface Race {
     name: string;
     status: RaceStatus;
     heats: Heat[];
+    raceEventId: string;
 }
 
 export interface NewRaceDto {
     name: string;
     heats: Heat[];
+    raceEventId: string;
 }
 
 export interface Slot {

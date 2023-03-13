@@ -34,7 +34,7 @@ function stateProviderFactory (initialState: State) {
         },
         pilots: {
             addOne(pilotName: string) {
-                invoke<Pilot>("set_pilot", {pilot: {name: pilotName}})
+                invoke<Pilot>("set_pilot", {pilot: {name: pilotName, raceEventId: state.selectedRaceEventId}})
                     .then((pilot) => {
                         setState("pilots", pilots => ([...pilots, pilot]));
                     }).catch(console.log);
@@ -42,7 +42,7 @@ function stateProviderFactory (initialState: State) {
         },
         races: {
             addOne(heats: Heat[]) {
-                invoke<Race>('add_race', { newRaceDto: {name: "Heat name", heats}satisfies NewRaceDto})
+                invoke<Race>('add_race', { newRaceDto: {name: "Heat name", heats, raceEventId: state.selectedRaceEventId}satisfies NewRaceDto})
                     .then((newRace: Race) => {
                         setState("races", oldRaces => ([...oldRaces, newRace]))
                     });

@@ -21,7 +21,7 @@ export function Races() {
 
     const addSlot = () => {
         if (slots().length < 4) {
-            setSlots(oldSlots => ([...oldSlots, {channel: "", pilot: {name: ''}}]));
+            setSlots(oldSlots => ([...oldSlots, {channel: "", pilot: {name: '', raceEventId: ''}}]));
         }
     }
 
