@@ -1,10 +1,13 @@
+use std::fs::{File, OpenOptions};
+use std::io::{BufReader, ErrorKind, Write};
+
 use bson::oid::ObjectId;
+use bson::serde_helpers::serialize_object_id_as_hex_string;
+use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
-use chrono::serde::ts_microseconds;
-use bson::serde_helpers::serialize_object_id_as_hex_string;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
@@ -48,7 +51,8 @@ pub struct NewRaceDto {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum RaceEventType {
-    Local, Cloud
+    Local,
+    Cloud,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -108,7 +112,12 @@ pub struct ErrorMessage {
 }
 
 impl<T, K> InvokeRequest<T, K> {
-    pub fn new(body: T) -> (InvokeRequest<T, K>, oneshot::Receiver<Result<K, ErrorMessage>>) {
+    pub fn new(
+        body: T,
+    ) -> (
+        InvokeRequest<T, K>,
+        oneshot::Receiver<Result<K, ErrorMessage>>,
+    ) {
         let (sender, receiver) = oneshot::channel();
         (
             InvokeRequest {
@@ -133,24 +142,29 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
         dbg!(&action, &state);
         match action {
             Actions::Init(invoke_request) => {
-                invoke_request
-                    .response_tx
-                    .send(Ok(state.clone()))
-                    .unwrap();
+                invoke_request.response_tx.send(Ok(state.clone())).unwrap();
             }
             Actions::CreateRaceEvent(invoke_request) => {
                 if invoke_request.body.name.len() > 0 {
                     let new_race_event = RaceEvent::new(invoke_request.body.name);
                     state.race_events.push(new_race_event.clone());
-                    invoke_request.response_tx
-                        .send(Ok(new_race_event))
+                    invoke_request
+                        .response_tx
+                        .send(Ok(new_race_event.clone()))
                         .unwrap();
+                    let mut races_file = match OpenOptions::new().write(true).read(true).open("/tmp/races_local") {
+                        Ok(f) => f,
+                        Err(e) => match e.kind() {
+                            _ => panic!("Can not open the db"),
+                        },
+                    };
                 } else {
                     invoke_request
                         .response_tx
                         .send(Err(ErrorMessage {
-                            message: format!("Missing 'name' property in RaceEvent").into()
-                        })).unwrap();
+                            message: format!("Missing 'name' property in RaceEvent").into(),
+                        }))
+                        .unwrap();
                 }
             }
             Actions::AddPilot(invoke_request) => {
@@ -172,21 +186,18 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                         .send(Ok(invoke_request.body))
                         .unwrap();
                 }
-            },
+            }
             Actions::AddRace(invoke_request) => {
                 let new_race = Race {
                     name: invoke_request.body.name,
                     heats: invoke_request.body.heats,
                     id: state.upcoming_races.len().to_string(),
                     status: RaceStatus::New,
-                    raceEventId: invoke_request.body.raceEventId
+                    raceEventId: invoke_request.body.raceEventId,
                 };
 
                 state.upcoming_races.push(new_race.clone());
-                invoke_request
-                    .response_tx
-                    .send(Ok(new_race))
-                    .unwrap();
+                invoke_request.response_tx.send(Ok(new_race)).unwrap();
             }
         }
         dbg!(&state);

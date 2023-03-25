@@ -1,37 +1,37 @@
-import {useAppState} from "../store";
-import {createSignal, For, Match, Show, Switch} from "solid-js";
-import {Races} from "./Races";
+import { createSignal, For, Match, Show, Switch } from "solid-js";
+import { useAppState } from "../store";
+import { Races } from "./Races";
 
 export function Event() {
-    const [state] = useAppState();
+  const [state] = useAppState();
 
-    const [openSettings, setOpenSettings] = createSignal(false);
+  const [openSettings, setOpenSettings] = createSignal(false);
 
-    const selectedRaceEvent = () => state.raceEvents.find(raceEvent => raceEvent._id === state.selectedRaceEventId);
+  const selectedRaceEvent = () => state.raceEvents.find(raceEvent => raceEvent._id === state.selectedRaceEventId);
 
-    const isEmpty = () => !state.pilots.length || !state.races.length;
+  const isEmpty = () => !state.pilots.length || !state.races.length;
 
-    return <div>
-        <h2>{selectedRaceEvent()?.name}</h2>
-            <Show when={!isEmpty() && !openSettings()}>
-                <button onClick={() => setOpenSettings(true)}>Settings</button>
-            </Show>
-        <Show when={openSettings()}>
-            <button onClick={() => setOpenSettings(false)}>Back</button>
+  return <div>
+    <h2>{selectedRaceEvent()?.name}</h2>
+    <Show when={!isEmpty() && !openSettings()}>
+      <button onClick={() => setOpenSettings(true)}>Settings</button>
+    </Show>
+    <Show when={openSettings()}>
+      <button onClick={() => setOpenSettings(false)}>Back</button>
+    </Show>
+    <Switch>
+      <Match when={!openSettings()}>
+        <Show when={!isEmpty()} fallback={<button onClick={() => setOpenSettings(true)}>Go to Settings</button>}>
+          <ul>
+            <For each={state.races}>
+              {(item) => <li>{item.name} {item.status}</li>}
+            </For>
+          </ul>
         </Show>
-        <Switch>
-            <Match when={!openSettings()}>
-                <Show when={!isEmpty()} fallback={<button onClick={() => setOpenSettings(true)}>Go to Settings</button>}>
-                    <ul>
-                        <For each={state.races}>
-                            {(item) => <li>{item.name} {item.status}</li>}
-                        </For>
-                    </ul>
-                </Show>
-            </Match>
-            <Match when={openSettings()}>
-                <Races />
-            </Match>
-        </Switch>
-    </div>
+      </Match>
+      <Match when={openSettings()}>
+        <Races />
+      </Match>
+    </Switch>
+  </div>
 }
