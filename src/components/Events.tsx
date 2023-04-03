@@ -15,7 +15,7 @@ export function Events() {
         <h2>Events</h2>
         <ul>
             <For each={state.raceEvents}>
-                {item => <li>({item._id})[{item.race_event_type}] {item.name} - {item.created_at}<button onClick={() => raceEvents.selectOne(item._id)}>Open</button></li>}
+                {item => <li>({item.id})[{item.race_event_type}] {item.name} - {item.created_at}<button onClick={() => raceEvents.selectOne(item.id)}>Open</button></li>}
             </For>
         </ul>
         <h3>New event</h3>

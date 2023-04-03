@@ -8,12 +8,12 @@ use chrono::{DateTime, Utc};
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
+use crate::db::Db;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
     name: String,
-    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
-    raceEventId: ObjectId,
+    raceEventId: i64,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -34,8 +34,7 @@ struct Heat {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Race {
     id: String,
-    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
-    raceEventId: ObjectId,
+    raceEventId: i64,
     name: String,
     status: RaceStatus,
     heats: Vec<Heat>,
@@ -45,8 +44,7 @@ pub struct Race {
 pub struct NewRaceDto {
     name: String,
     heats: Vec<Heat>,
-    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
-    raceEventId: ObjectId,
+    raceEventId: i64,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -57,8 +55,7 @@ pub enum RaceEventType {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEvent {
-    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
-    _id: ObjectId,
+    id: i64,
     name: String,
     race_event_type: RaceEventType,
     #[serde(with = "ts_microseconds")]
@@ -66,9 +63,9 @@ pub struct RaceEvent {
 }
 
 impl RaceEvent {
-    pub fn new(name: String) -> RaceEvent {
+    pub fn new(id: i64, name: String) -> RaceEvent {
         RaceEvent {
-            _id: ObjectId::new(),
+            id,
             name,
             race_event_type: RaceEventType::Local,
             created_at: Utc::now(),
@@ -138,6 +135,8 @@ pub enum Actions {
 }
 
 pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
+    let db = Db::new();
+
     while let Some(action) = rx.recv().await {
         dbg!(&action, &state);
         match action {
@@ -146,18 +145,13 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
             }
             Actions::CreateRaceEvent(invoke_request) => {
                 if invoke_request.body.name.len() > 0 {
-                    let new_race_event = RaceEvent::new(invoke_request.body.name);
+                    let id = db.insert_race(invoke_request.body.name.clone());
+                    let new_race_event = RaceEvent::new(id, invoke_request.body.name);
                     state.race_events.push(new_race_event.clone());
                     invoke_request
                         .response_tx
                         .send(Ok(new_race_event.clone()))
                         .unwrap();
-                    let mut races_file = match OpenOptions::new().write(true).read(true).open("/tmp/races_local") {
-                        Ok(f) => f,
-                        Err(e) => match e.kind() {
-                            _ => panic!("Can not open the db"),
-                        },
-                    };
                 } else {
                     invoke_request
                         .response_tx

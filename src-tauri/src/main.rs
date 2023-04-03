@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod core;
+mod db;
 
 use crate::core::{ErrorMessage, InvokeRequest};
 use std::fs::File;
@@ -10,6 +11,7 @@ use std::sync::Arc;
 use tauri::{Manager, Window};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Mutex};
+use crate::db::Db;
 
 struct LocalState {
     dispatch: Arc<Mutex<Sender<core::Actions>>>,

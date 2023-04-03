@@ -1,6 +1,6 @@
 export interface Pilot {
     name: string;
-    raceEventId: string;
+    raceEventId: number;
 }
 
 export interface Heat {
@@ -16,13 +16,13 @@ export interface Race {
     name: string;
     status: RaceStatus;
     heats: Heat[];
-    raceEventId: string;
+    raceEventId: number;
 }
 
 export interface NewRaceDto {
     name: string;
     heats: Heat[];
-    raceEventId: string;
+    raceEventId: number;
 }
 
 export interface Slot {
@@ -31,7 +31,7 @@ export interface Slot {
 }
 
 export interface RaceEvent {
-    _id: string;
+    id: number;
     name: string;
     race_event_type: "Local" | "Cloud";
     created_at: string;
