@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::{Formatter, write};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, ErrorKind, Write};
 
@@ -53,6 +55,12 @@ pub enum RaceEventType {
     Cloud,
 }
 
+impl fmt::Display for RaceEventType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEvent {
     id: i64,
@@ -63,7 +71,7 @@ pub struct RaceEvent {
 }
 
 impl RaceEvent {
-    pub fn new(id: i64, name: String) -> RaceEvent {
+    pub fn new(id: i64, race_event_type: RaceEventType, created_at: DateTime<Utc>, name: String) -> RaceEvent {
         RaceEvent {
             id,
             name,
@@ -145,8 +153,7 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
             }
             Actions::CreateRaceEvent(invoke_request) => {
                 if invoke_request.body.name.len() > 0 {
-                    let id = db.insert_race(invoke_request.body.name.clone());
-                    let new_race_event = RaceEvent::new(id, invoke_request.body.name);
+                    let new_race_event = db.insert_race(invoke_request.body.name.clone(), Utc::now(), RaceEventType::Local);
                     state.race_events.push(new_race_event.clone());
                     invoke_request
                         .response_tx
