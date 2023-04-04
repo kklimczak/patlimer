@@ -88,8 +88,8 @@ impl RaceEvent {
         RaceEvent {
             id,
             name,
-            race_event_type: RaceEventType::Local,
-            created_at: Utc::now(),
+            race_event_type,
+            created_at,
         }
     }
 }
