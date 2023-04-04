@@ -36,6 +36,9 @@ function stateProviderFactory(initialState: State) {
       },
       selectOne(id: number) {
         setState(oldState => ({ ...oldState, selectedRaceEventId: id }))
+      },
+      clearSelection() {
+        setState(oldState => ({...oldState, selectedRaceEventId: 0}))
       }
     },
     pilots: {

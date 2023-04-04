@@ -3,15 +3,16 @@ import { useAppState } from "../store";
 import { Races } from "./Races";
 
 export function Event() {
-  const [state] = useAppState();
+  const [state, {raceEvents}] = useAppState();
 
   const [openSettings, setOpenSettings] = createSignal(false);
 
-  const selectedRaceEvent = () => state.raceEvents.find(raceEvent => raceEvent._id === state.selectedRaceEventId);
+  const selectedRaceEvent = () => state.raceEvents.find(raceEvent => raceEvent.id === state.selectedRaceEventId);
 
   const isEmpty = () => !state.pilots.length || !state.races.length;
 
   return <div>
+    <button onClick={() => raceEvents.clearSelection()}>Back to races</button>
     <h2>{selectedRaceEvent()?.name}</h2>
     <Show when={!isEmpty() && !openSettings()}>
       <button onClick={() => setOpenSettings(true)}>Settings</button>
