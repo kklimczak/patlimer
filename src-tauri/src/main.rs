@@ -76,7 +76,7 @@ async fn add_race(
 }
 
 fn main() {
-    let mut state = core::State::init();
+    let mut state = core::State::init(Db::init());
 
     let (dispatch, listener) = mpsc::channel(5);
 

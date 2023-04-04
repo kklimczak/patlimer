@@ -7,6 +7,7 @@ use bson::oid::ObjectId;
 use bson::serde_helpers::serialize_object_id_as_hex_string;
 use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ValueRef};
 use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
@@ -61,6 +62,18 @@ impl fmt::Display for RaceEventType {
     }
 }
 
+impl FromSql for RaceEventType {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        value.as_str().and_then(|s| {
+            match s {
+                "Local" => Ok(RaceEventType::Local),
+                "Cloud" => Ok(RaceEventType::Cloud),
+                _ => Err(FromSqlError::InvalidType)
+            }
+        })
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEvent {
     id: i64,
@@ -95,12 +108,12 @@ pub struct State {
 }
 
 impl State {
-    pub fn init() -> State {
+    pub fn init(race_events: Vec<RaceEvent>) -> State {
         State {
             upcoming_races: Vec::new(),
             current_race: None,
             pilots: Vec::new(),
-            race_events: Vec::new(),
+            race_events,
         }
     }
 }

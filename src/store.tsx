@@ -22,6 +22,11 @@ function stateProviderFactory(initialState: State) {
 
   const methods = {
     raceEvents: {
+      init() {
+        invoke<{race_events: RaceEvent[]}>("init").then((initState) => {
+          setState("raceEvents", initState.race_events);
+        })
+      },
       addOne(eventName: string) {
         invoke<RaceEvent>("create_race_event", { newRaceEventDto: { name: eventName } })
           .then((raceEvent) => {

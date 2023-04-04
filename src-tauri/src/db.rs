@@ -8,7 +8,16 @@ pub struct Db {
 
 impl Db {
     pub fn new() -> Db {
-        let connection = Connection::open_in_memory().expect("Can not open the database!");
+        let connection = Connection::open("db").expect("Can not open the database!");
+
+        Db {
+            connection
+        }
+    }
+
+
+    pub fn init() -> Vec<RaceEvent> {
+        let connection = Connection::open("db").expect("Can not open the database!");
 
         connection.execute("CREATE TABLE IF NOT EXISTS raceEvents (
             id INTEGER PRIMARY KEY,
@@ -17,9 +26,13 @@ impl Db {
             race_event_type TEXT NOT NULL
         )", ()).expect("Can not create the race events table!");
 
-        Db {
-            connection
-        }
+        let mut statement = connection.prepare("SELECT id, race_event_type, created_at, name FROM raceEvents").expect("Can not prepare the statement!");
+
+        let race_events_iter = statement.query_map([], |row| {
+            Ok(RaceEvent::new(row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        }).unwrap();
+
+        race_events_iter.map(|r| r.unwrap()).collect()
     }
 
     pub fn insert_race(&self, name: String, created_at: DateTime<Utc>, race_event_type: RaceEventType) -> RaceEvent {
