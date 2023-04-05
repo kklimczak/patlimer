@@ -153,6 +153,7 @@ pub enum Actions {
     CreateRaceEvent(InvokeRequest<NewRaceEventDto, RaceEvent>),
     AddPilot(InvokeRequest<Pilot, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
+    RemoveRaceEvent(InvokeRequest<i64, ()>),
 }
 
 pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
@@ -213,6 +214,11 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
 
                 state.upcoming_races.push(new_race.clone());
                 invoke_request.response_tx.send(Ok(new_race)).unwrap();
+            }
+            Actions::RemoveRaceEvent(invoke_request) => {
+                state.race_events.remove(state.race_events.iter().position(|x| x.id == invoke_request.body).unwrap());
+                db.remove_race_event(invoke_request.body);
+                invoke_request.response_tx.send(Ok(())).unwrap();
             }
         }
         dbg!(&state);

@@ -6,9 +6,8 @@ import {Events} from "./components/Events";
 import {Event} from "./components/Event";
 
 function App() {
-    const [state, {raceEvents}] = useAppState();
+    const [state] = useAppState();
 
-    raceEvents.init();
   return (
       <StateProvider initialState={initialState}>
           <div class="container">

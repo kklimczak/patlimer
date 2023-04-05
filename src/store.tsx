@@ -22,11 +22,6 @@ function stateProviderFactory(initialState: State) {
 
   const methods = {
     raceEvents: {
-      init() {
-        invoke<{race_events: RaceEvent[]}>("init").then((initState) => {
-          setState("raceEvents", initState.race_events);
-        })
-      },
       addOne(eventName: string) {
         invoke<RaceEvent>("create_race_event", { newRaceEventDto: { name: eventName } })
           .then((raceEvent) => {
@@ -39,6 +34,12 @@ function stateProviderFactory(initialState: State) {
       },
       clearSelection() {
         setState(oldState => ({...oldState, selectedRaceEventId: 0}))
+      },
+      removeOne(id: number) {
+        invoke<unknown>('remove_race_event', {raceEventId: id})
+            .then(() => {
+              setState("raceEvents", raceEvents => (raceEvents.filter(raceEvent => raceEvent.id !== id)))
+            });
       }
     },
     pilots: {
@@ -58,6 +59,10 @@ function stateProviderFactory(initialState: State) {
       }
     }
   }
+
+  invoke<{race_events: RaceEvent[]}>("init").then((initState) => {
+    setState("raceEvents", initState.race_events);
+  });
 
   return [
     state,

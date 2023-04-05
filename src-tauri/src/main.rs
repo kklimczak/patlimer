@@ -75,6 +75,21 @@ async fn add_race(
     receiver.await.unwrap()
 }
 
+#[tauri::command]
+async fn remove_race_event(
+    race_event_id: i64,
+    state: tauri::State<'_, LocalState>
+) -> Result<(), ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(race_event_id);
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::RemoveRaceEvent(request))
+        .await
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
 fn main() {
     let mut state = core::State::init(Db::init());
 
@@ -85,7 +100,8 @@ fn main() {
             set_pilot,
             add_race,
             init,
-            create_race_event
+            create_race_event,
+            remove_race_event,
         ])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),

@@ -70,4 +70,11 @@ impl Db {
 
         RaceEvent::new(self.connection.last_insert_rowid(), race_event_type, created_at, name)
     }
+
+    pub fn remove_race_event(&self, race_event_id: i64) {
+        let connection = Connection::open(format!("{}", self.connection.last_insert_rowid())).expect("Can not open the race event database");
+        std::fs::remove_file(format!("{}", race_event_id)).unwrap_or(());
+        self.connection
+            .execute("DELETE FROM raceEvents WHERE id = ?1", params![race_event_id]).expect("Can not remove raceEvent!");
+    }
 }
