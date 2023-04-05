@@ -168,6 +168,7 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                 if invoke_request.body.name.len() > 0 {
                     let new_race_event = db.insert_race(invoke_request.body.name.clone(), Utc::now(), RaceEventType::Local);
                     state.race_events.push(new_race_event.clone());
+
                     invoke_request
                         .response_tx
                         .send(Ok(new_race_event.clone()))

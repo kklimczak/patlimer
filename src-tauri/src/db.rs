@@ -40,6 +40,34 @@ impl Db {
             "INSERT INTO raceEvents (name, created_at, race_event_type) VALUES (?1, ?2, ?3)",
             params![name, created_at, race_event_type.to_string()]
         ).unwrap();
+
+        let mut connection = Connection::open(format!("{}", self.connection.last_insert_rowid())).expect("Can not open the race event database during first connection");
+
+        let tx = connection.transaction().unwrap();
+
+        tx.execute("CREATE TABLE IF NOT EXISTS pilots (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL
+        )", ()).expect("Can not create the pilots table!");
+
+        tx.execute("CREATE TABLE IF NOT EXISTS races (
+            id INTEGER PRIMARY KEY,
+            no INTEGER NOT NULL,
+            status TEXT NOT NULL
+        )", ()).expect("Can not create the races table!");
+
+        tx.execute("CREATE TABLE IF NOT EXISTS heats (
+            id INTEGER PRIMARY KEY,
+            no INTEGER NOT NULL,
+            pilot_id INTEGER NOT NULL,
+            race_id INTEGER NOT NULL,
+            rssi_raw TEXT NOT NULL,
+            FOREIGN KEY(pilot_id) REFERENCES pilots(id),
+            FOREIGN KEY(race_id) REFERENCES races(id)
+        )", ()).expect("Can not create the heats table!");
+
+        tx.commit().expect("Can not perform transaction!");
+
         RaceEvent::new(self.connection.last_insert_rowid(), race_event_type, created_at, name)
     }
 }
