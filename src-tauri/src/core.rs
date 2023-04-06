@@ -15,8 +15,14 @@ use crate::db::Db;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
-    name: String,
-    raceEventId: i64,
+    pub id: i64,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct NewPilotDto {
+    pub race_event_id: i64,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -151,13 +157,13 @@ impl<T, K> InvokeRequest<T, K> {
 pub enum Actions {
     Init(InvokeRequest<(), State>),
     CreateRaceEvent(InvokeRequest<NewRaceEventDto, RaceEvent>),
-    AddPilot(InvokeRequest<Pilot, Pilot>),
+    AddPilot(InvokeRequest<NewPilotDto, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
     RemoveRaceEvent(InvokeRequest<i64, ()>),
 }
 
 pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
-    let db = Db::new();
+    let db = Db::new("db".to_string());
 
     while let Some(action) = rx.recv().await {
         dbg!(&action, &state);
@@ -184,7 +190,7 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                 }
             }
             Actions::AddPilot(invoke_request) => {
-                if state.pilots.contains(&invoke_request.body) {
+                if state.pilots.iter().any(|x| x.name == invoke_request.body.name) {
                     invoke_request
                         .response_tx
                         .send(Err(ErrorMessage {
@@ -196,10 +202,12 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                         }))
                         .unwrap();
                 } else {
-                    state.pilots.push(invoke_request.body.clone());
+                    let db = Db::new(invoke_request.body.race_event_id.to_string());
+                    let new_pilot = db.insert_pilot(invoke_request.body.name);
+                    state.pilots.push(new_pilot.clone());
                     invoke_request
                         .response_tx
-                        .send(Ok(invoke_request.body))
+                        .send(Ok(new_pilot))
                         .unwrap();
                 }
             }

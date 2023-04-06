@@ -46,11 +46,10 @@ async fn create_race_event(
 
 #[tauri::command]
 async fn set_pilot(
-    pilot: core::Pilot,
+    new_pilot_dto: core::NewPilotDto,
     state: tauri::State<'_, LocalState>,
 ) -> Result<core::Pilot, ErrorMessage> {
-    println!("{:?}", pilot);
-    let (request, receiver) = InvokeRequest::new(pilot.clone());
+    let (request, receiver) = InvokeRequest::new(new_pilot_dto.clone());
     let mut lock = state.dispatch.lock().await;
     lock.send(core::Actions::AddPilot(request))
         .await

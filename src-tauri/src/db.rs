@@ -1,17 +1,19 @@
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, params, Result};
-use crate::core::{RaceEvent, RaceEventType};
+use crate::core::{Pilot, RaceEvent, RaceEventType};
 
 pub struct Db {
     connection: Connection,
+    name: String,
 }
 
 impl Db {
-    pub fn new() -> Db {
-        let connection = Connection::open("db").expect("Can not open the database!");
+    pub fn new(name: String) -> Db {
+        let connection = Connection::open(&name).expect("Can not open the database!");
 
         Db {
-            connection
+            connection,
+            name
         }
     }
 
@@ -76,5 +78,14 @@ impl Db {
         std::fs::remove_file(format!("{}", race_event_id)).unwrap_or(());
         self.connection
             .execute("DELETE FROM raceEvents WHERE id = ?1", params![race_event_id]).expect("Can not remove raceEvent!");
+    }
+
+    pub fn insert_pilot(&self, name: String) -> Pilot {
+        self.connection.execute(
+            "INSERT INTO pilots (name) VALUES (?1)",
+            params![name]
+        ).unwrap();
+
+        Pilot {name, id: self.connection.last_insert_rowid()}
     }
 }
