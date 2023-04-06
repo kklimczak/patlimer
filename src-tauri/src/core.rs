@@ -19,6 +19,12 @@ pub struct Pilot {
     pub name: String,
 }
 
+impl Pilot {
+    pub fn new(id: i64, name: String) -> Pilot {
+        Pilot { id, name }
+    }
+}
+
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct NewPilotDto {
     pub race_event_id: i64,
@@ -106,6 +112,11 @@ pub struct NewRaceEventDto {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RaceEventDetailsDto {
+    pilots: Vec<Pilot>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct State {
     upcoming_races: Vec<Race>,
     current_race: Option<Race>,
@@ -156,10 +167,11 @@ impl<T, K> InvokeRequest<T, K> {
 #[derive(Debug)]
 pub enum Actions {
     Init(InvokeRequest<(), State>),
+    LoadRaceEvent(InvokeRequest<i64, RaceEventDetailsDto>),
     CreateRaceEvent(InvokeRequest<NewRaceEventDto, RaceEvent>),
+    RemoveRaceEvent(InvokeRequest<i64, ()>),
     AddPilot(InvokeRequest<NewPilotDto, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
-    RemoveRaceEvent(InvokeRequest<i64, ()>),
 }
 
 pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
@@ -170,6 +182,15 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
         match action {
             Actions::Init(invoke_request) => {
                 invoke_request.response_tx.send(Ok(state.clone())).unwrap();
+            }
+            Actions::LoadRaceEvent(invoke_request) => {
+                let db = Db::new(invoke_request.body.to_string());
+
+                let pilots = db.find_pilots();
+
+                invoke_request.response_tx
+                    .send(Ok(RaceEventDetailsDto {pilots}))
+                    .unwrap();
             }
             Actions::CreateRaceEvent(invoke_request) => {
                 if invoke_request.body.name.len() > 0 {

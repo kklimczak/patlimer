@@ -30,7 +30,8 @@ function stateProviderFactory(initialState: State) {
           })
       },
       selectOne(id: number) {
-        setState(oldState => ({ ...oldState, selectedRaceEventId: id }))
+        setState(oldState => ({ ...oldState, selectedRaceEventId: id }));
+        methods.raceEvents.loadRaceEventDetails(id);
       },
       clearSelection() {
         setState(oldState => ({...oldState, selectedRaceEventId: 0}))
@@ -40,6 +41,12 @@ function stateProviderFactory(initialState: State) {
             .then(() => {
               setState("raceEvents", raceEvents => (raceEvents.filter(raceEvent => raceEvent.id !== id)))
             });
+      },
+      loadRaceEventDetails(id: number) {
+        invoke<{pilots: Pilot[]}>('find_race_event_details', {raceEventId: id})
+            .then((details) => {
+              setState("pilots", details.pilots);
+            })
       }
     },
     pilots: {

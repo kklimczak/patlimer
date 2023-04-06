@@ -88,4 +88,14 @@ impl Db {
 
         Pilot {name, id: self.connection.last_insert_rowid()}
     }
+
+    pub fn find_pilots(&self) -> Vec<Pilot> {
+        let mut statement = self.connection.prepare("SELECT id, name FROM pilots").expect("Can not prepare the statement!");
+
+        let pilots_iter = statement.query_map([], |row| {
+            Ok(Pilot::new(row.get(0)?, row.get(1)?))
+        }).unwrap();
+
+        pilots_iter.map(|r| r.unwrap()).collect()
+    }
 }

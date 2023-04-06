@@ -4,7 +4,7 @@
 mod core;
 mod db;
 
-use crate::core::{ErrorMessage, InvokeRequest};
+use crate::core::{ErrorMessage, InvokeRequest, RaceEventDetailsDto};
 use std::fs::File;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::Arc;
@@ -89,6 +89,21 @@ async fn remove_race_event(
     receiver.await.unwrap()
 }
 
+#[tauri::command]
+async fn find_race_event_details(
+    race_event_id: i64,
+    state: tauri::State<'_, LocalState>
+) -> Result<RaceEventDetailsDto, ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(race_event_id);
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::LoadRaceEvent(request))
+        .await
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
 fn main() {
     let mut state = core::State::init(Db::init());
 
@@ -101,6 +116,7 @@ fn main() {
             init,
             create_race_event,
             remove_race_event,
+            find_race_event_details,
         ])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),
