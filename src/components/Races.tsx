@@ -1,5 +1,5 @@
 import "./Races.scss";
-import {Heat, NewRaceDto, Pilot, Race, Slot} from "../models";
+import {Heat, NewHeatDto, NewRaceDto, Pilot, Race, Slot} from "../models";
 import {createSignal, For} from "solid-js";
 import {invoke} from "@tauri-apps/api/tauri";
 import {useAppState} from "../store";
@@ -42,10 +42,10 @@ export function Races() {
     }
 
     const addRace = () => {
-        const heats: Heat[] = slots().map(({channel, pilot}, index) => ({
+        const heats: NewHeatDto[] = slots().map(({channel, pilot}, index) => ({
             no: index + 1,
             channel,
-            pilot
+            pilot_id: pilot.id,
         }));
         races.addOne(heats);
     }

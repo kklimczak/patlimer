@@ -32,34 +32,75 @@ pub struct NewPilotDto {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-enum RaceStatus {
+pub enum RaceStatus {
     New,
     InProgress,
     Interrupted,
     Finished,
 }
 
+impl fmt::Display for RaceStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl FromSql for RaceStatus {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        value.as_str().and_then(|s| {
+            match s {
+                "New" => Ok(RaceStatus::New),
+                "InProgress" => Ok(RaceStatus::InProgress),
+                "Interrupted" => Ok(RaceStatus::Interrupted),
+                "Finished" => Ok(RaceStatus::Finished),
+                _ => Err(FromSqlError::InvalidType)
+            }
+        })
+    }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct Heat {
+pub struct Heat {
+    id: i64,
     no: u8,
     channel: String,
-    pilot: Pilot,
+    pilot_id: i64,
+}
+
+impl Heat {
+    pub fn new(id: i64, no: u8, channel: String, pilot_id: i64) -> Heat {
+        Heat {
+            id, no, channel, pilot_id
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Race {
-    id: String,
-    raceEventId: i64,
+    id: i64,
     name: String,
     status: RaceStatus,
     heats: Vec<Heat>,
 }
 
+impl Race {
+    pub fn new(id: i64, name: String, status: RaceStatus, heats: Vec<Heat>) -> Race {
+        Race {id, name, status, heats}
+    }
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct NewHeatDto {
+    pub no: u8,
+    pub pilot_id: i64,
+    pub channel: String,
+}
+
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct NewRaceDto {
-    name: String,
-    heats: Vec<Heat>,
-    raceEventId: i64,
+    pub name: String,
+    pub heats: Vec<NewHeatDto>,
+    pub race_event_id: i64,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -233,14 +274,8 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                 }
             }
             Actions::AddRace(invoke_request) => {
-                let new_race = Race {
-                    name: invoke_request.body.name,
-                    heats: invoke_request.body.heats,
-                    id: state.upcoming_races.len().to_string(),
-                    status: RaceStatus::New,
-                    raceEventId: invoke_request.body.raceEventId,
-                };
-
+                let mut db = Db::new(invoke_request.body.race_event_id.to_string());
+                let new_race = db.insert_race_with_heats(invoke_request.body);
                 state.upcoming_races.push(new_race.clone());
                 invoke_request.response_tx.send(Ok(new_race)).unwrap();
             }

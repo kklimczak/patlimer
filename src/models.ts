@@ -1,4 +1,5 @@
 export interface Pilot {
+    id: number;
     name: string;
     raceEventId: number;
 }
@@ -19,10 +20,16 @@ export interface Race {
     raceEventId: number;
 }
 
+export interface NewHeatDto {
+    no: number;
+    pilot_id: number;
+    channel: string;
+}
+
 export interface NewRaceDto {
     name: string;
-    heats: Heat[];
-    raceEventId: number;
+    heats: NewHeatDto[];
+    race_event_id: number;
 }
 
 export interface Slot {
@@ -39,4 +46,8 @@ export interface RaceEvent {
 
 export interface NewRaceEventDto {
     name: string;
+}
+
+export interface RaceDetailsDto {
+    pilots: Pilot[];
 }

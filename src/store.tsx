@@ -1,6 +1,6 @@
 import { Accessor, createContext, ParentProps, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { Heat, NewRaceDto, Pilot, Race, RaceEvent } from "./models";
+import {Heat, NewHeatDto, NewRaceDto, Pilot, Race, RaceDetailsDto, RaceEvent} from "./models";
 import { invoke } from "@tauri-apps/api/tauri";
 
 export const initialState: State = {
@@ -43,7 +43,7 @@ function stateProviderFactory(initialState: State) {
             });
       },
       loadRaceEventDetails(id: number) {
-        invoke<{pilots: Pilot[]}>('find_race_event_details', {raceEventId: id})
+        invoke<RaceDetailsDto>('find_race_event_details', {raceEventId: id})
             .then((details) => {
               setState("pilots", details.pilots);
             })
@@ -58,8 +58,8 @@ function stateProviderFactory(initialState: State) {
       },
     },
     races: {
-      addOne(heats: Heat[]) {
-        invoke<Race>('add_race', { newRaceDto: { name: "Heat name", heats, raceEventId: state.selectedRaceEventId }satisfies NewRaceDto })
+      addOne(heats: NewHeatDto[]) {
+        invoke<Race>('add_race', { newRaceDto: { name: "Heat name", heats, race_event_id: state.selectedRaceEventId }satisfies NewRaceDto })
           .then((newRace: Race) => {
             setState("races", oldRaces => ([...oldRaces, newRace]))
           });

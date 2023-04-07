@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, params, Result};
-use crate::core::{Pilot, RaceEvent, RaceEventType};
+use crate::core::{Heat, NewRaceDto, Pilot, Race, RaceEvent, RaceEventType, RaceStatus};
 
 pub struct Db {
     connection: Connection,
@@ -54,13 +54,14 @@ impl Db {
 
         tx.execute("CREATE TABLE IF NOT EXISTS races (
             id INTEGER PRIMARY KEY,
-            no INTEGER NOT NULL,
+            name INTEGER NOT NULL,
             status TEXT NOT NULL
         )", ()).expect("Can not create the races table!");
 
         tx.execute("CREATE TABLE IF NOT EXISTS heats (
             id INTEGER PRIMARY KEY,
             no INTEGER NOT NULL,
+            channel TEXT NOT NULL,
             pilot_id INTEGER NOT NULL,
             race_id INTEGER NOT NULL,
             rssi_raw TEXT NOT NULL,
@@ -97,5 +98,29 @@ impl Db {
         }).unwrap();
 
         pilots_iter.map(|r| r.unwrap()).collect()
+    }
+
+    pub fn insert_race_with_heats(&mut self, new_race_dto: NewRaceDto) -> Race {
+        let tx = self.connection.transaction().unwrap();
+
+        tx.execute(
+            "INSERT INTO races (name, status) VALUES (?1, ?2)",
+            params![new_race_dto.name, RaceStatus::New.to_string()]
+        ).unwrap();
+
+        let new_race_id = tx.last_insert_rowid();
+
+        let heats = new_race_dto.heats.iter().map(|heat| {
+            tx.execute(
+                "INSERT INTO heats (no, channel, pilot_id, race_id, rssi_raw) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![heat.no, heat.channel, heat.pilot_id, new_race_id, ""]
+            ).unwrap();
+
+            Heat::new(tx.last_insert_rowid(), heat.no, heat.channel.clone(), heat.pilot_id)
+        }).collect();
+
+        tx.commit().unwrap();
+
+        Race::new(new_race_id, new_race_dto.name, RaceStatus::New, heats)
     }
 }
