@@ -21,7 +21,7 @@ export function Races() {
 
     const addSlot = () => {
         if (slots().length < 4) {
-            setSlots(oldSlots => ([...oldSlots, {channel: "", pilot: {name: '', raceEventId: ''}}]));
+            setSlots(oldSlots => ([...oldSlots, {channel: "", pilot_id: 0}]));
         }
     }
 
@@ -37,20 +37,20 @@ export function Races() {
         updateSlot(index, {channel});
     }
 
-    const updatePilot = (index: number, pilotName: string) => {
-        updateSlot(index, {pilot: state.pilots.find(pilot => pilot.name === pilotName)});
+    const updatePilot = (index: number, pilot_id: number) => {
+        updateSlot(index, {pilot_id});
     }
 
     const addRace = () => {
-        const heats: NewHeatDto[] = slots().map(({channel, pilot}, index) => ({
+        const heats: NewHeatDto[] = slots().map(({channel, pilot_id}, index) => ({
             no: index + 1,
             channel,
-            pilot_id: pilot.id,
+            pilot_id,
         }));
         races.addOne(heats);
     }
 
-    const isRaceFormValid = () => slots().length && slots().every(slot => slot.channel && slot.pilot.name);
+    const isRaceFormValid = () => slots().length && slots().every(slot => slot.channel && slot.pilot_id);
 
 
     return (<div class="races-root">
@@ -71,7 +71,7 @@ export function Races() {
             <ul>
                 <For each={state.races} fallback={<span>No added races</span>}>
                     {(item) => <li>{item.name} - <For each={item.heats}>
-                        {heat => <span>{heat.channel}:{heat.pilot.name}</span>}
+                        {heat => <span>{heat.channel}:{heat.pilot_id}</span>}
                     </For></li>}
                 </For>
             </ul>
@@ -87,10 +87,10 @@ export function Races() {
                                 {channel => <option value={channel}>{channel}</option>}
                             </For>
                         </select>
-                        <select value={item?.pilot.name} onChange={e => updatePilot(index(), e.currentTarget.value)}>
-                            <option value="">-- Select pilot --</option>
+                        <select value={item?.pilot_id} onChange={e => updatePilot(index(), Number(e.currentTarget.value))}>
+                            <option value="0">-- Select pilot --</option>
                             <For each={state.pilots}>
-                                {pilot => <option value={pilot.name}>{pilot.name}</option>}
+                                {pilot => <option value={pilot.id}>{pilot.name}</option>}
                             </For>
                         </select>
                         <button onClick={() => removeSlot(index())}>Remove</button>

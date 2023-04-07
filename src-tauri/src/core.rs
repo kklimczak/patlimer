@@ -155,6 +155,7 @@ pub struct NewRaceEventDto {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RaceEventDetailsDto {
     pilots: Vec<Pilot>,
+    races: Vec<Race>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -228,9 +229,10 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
                 let db = Db::new(invoke_request.body.to_string());
 
                 let pilots = db.find_pilots();
+                let races = db.find_races_with_heats();
 
                 invoke_request.response_tx
-                    .send(Ok(RaceEventDetailsDto {pilots}))
+                    .send(Ok(RaceEventDetailsDto {pilots, races}))
                     .unwrap();
             }
             Actions::CreateRaceEvent(invoke_request) => {

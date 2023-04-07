@@ -7,7 +7,7 @@ export interface Pilot {
 export interface Heat {
     no: number;
     channel: string;
-    pilot: Pilot;
+    pilot_id: number;
 }
 
 export type RaceStatus = "New" | "InProgress" | "Interrupted" | "Finished";
@@ -34,7 +34,7 @@ export interface NewRaceDto {
 
 export interface Slot {
     channel: string;
-    pilot: Pilot;
+    pilot_id: number;
 }
 
 export interface RaceEvent {
@@ -50,4 +50,5 @@ export interface NewRaceEventDto {
 
 export interface RaceDetailsDto {
     pilots: Pilot[];
+    races: Race[];
 }

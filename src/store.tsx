@@ -44,8 +44,8 @@ function stateProviderFactory(initialState: State) {
       },
       loadRaceEventDetails(id: number) {
         invoke<RaceDetailsDto>('find_race_event_details', {raceEventId: id})
-            .then((details) => {
-              setState("pilots", details.pilots);
+            .then(({pilots, races}) => {
+              setState(oldState => ({...oldState, pilots, races}));
             })
       }
     },

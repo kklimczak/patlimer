@@ -123,4 +123,24 @@ impl Db {
 
         Race::new(new_race_id, new_race_dto.name, RaceStatus::New, heats)
     }
+
+    pub fn find_races_with_heats(&self) -> Vec<Race> {
+        let mut races_statement = self.connection.prepare(
+            "SELECT id, name, status FROM races"
+        ).unwrap();
+
+        races_statement.query_map([], |row| {
+            let race_id: i64 = row.get(0)?;
+
+            let mut heats_statement = self.connection.prepare(
+                "SELECT id, no, channel, pilot_id FROM heats WHERE race_id = ?1"
+            ).unwrap();
+
+            let heats_iter = heats_statement.query_map([race_id], |heat_row| {
+                Ok(Heat::new(heat_row.get(0)?, heat_row.get(1)?, heat_row.get(2)?, heat_row.get(3)?))
+            }).unwrap().map(|heat| heat.unwrap()).collect();
+
+            Ok(Race::new(race_id, row.get(1)?, row.get(2)?, heats_iter))
+        }).unwrap().map(|race| race.unwrap()).collect()
+    }
 }
