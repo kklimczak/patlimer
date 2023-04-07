@@ -71,7 +71,7 @@ export function Races() {
             <ul>
                 <For each={state.races} fallback={<span>No added races</span>}>
                     {(item) => <li>{item.name} - <For each={item.heats}>
-                        {heat => <span>{heat.channel}:{heat.pilot_id}</span>}
+                        {heat => <span>{heat.channel}:{state.pilots.find(pilot => pilot.id === heat.pilot_id)?.name}</span>}
                     </For></li>}
                 </For>
             </ul>
