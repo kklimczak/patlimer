@@ -3,11 +3,16 @@
 
 mod core;
 mod db;
+mod device;
 
+use std::fmt::format;
 use crate::core::{ErrorMessage, InvokeRequest, RaceEventDetailsDto};
 use std::fs::File;
-use std::io::{ErrorKind, Read, Write};
+use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
+use std::ops::Add;
 use std::sync::Arc;
+use std::time::Duration;
+use serialport::SerialPortType::UsbPort;
 use tauri::{Manager, Window};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Mutex};
@@ -133,6 +138,15 @@ fn main() {
 
             tauri::async_runtime::spawn(async move {
                 core::update_state(&mut state, listener).await;
+            });
+
+            tauri::async_runtime::spawn(async {
+                let mut ports = device::get_available_devices();
+
+                if ports.len() > 0 {
+                    let mut port = device::connect_to_device(ports.pop().unwrap());
+                    device::read_data(port);
+                }
             });
 
             Ok(())
