@@ -14,6 +14,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use serialport::SerialPortType::UsbPort;
 use tauri::{Manager, Window};
+use tokio::select;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Mutex};
 use crate::db::Db;
@@ -114,6 +115,9 @@ fn main() {
 
     let (dispatch, listener) = mpsc::channel(5);
 
+    let token = tokio_util::sync::CancellationToken::new();
+    let cloned_token = token.clone();
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             set_pilot,
@@ -140,17 +144,21 @@ fn main() {
                 core::update_state(&mut state, listener).await;
             });
 
-            tauri::async_runtime::spawn(async {
-                let mut ports = device::get_available_devices();
-
-                if ports.len() > 0 {
-                    let mut port = device::connect_to_device(ports.pop().unwrap());
-                    device::read_data(port);
+            tauri::async_runtime::spawn(async move {
+                select! {
+                    _ = cloned_token.cancelled() => {}
+                    _ = device::process_data() => {}
                 }
             });
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(move |_app_handle, event| match event {
+            tauri::RunEvent::Exit => {
+                token.cancel();
+            },
+            _ => {}
+        });
 }

@@ -35,3 +35,12 @@ pub fn read_data(port: Box<dyn SerialPort>) {
         }
     }
 }
+
+pub async fn process_data() {
+    let mut ports = get_available_devices();
+
+    if ports.len() > 0 {
+        let mut port = connect_to_device(ports.pop().unwrap());
+        read_data(port);
+    }
+}
