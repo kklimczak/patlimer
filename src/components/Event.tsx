@@ -3,7 +3,7 @@ import { useAppState } from "../store";
 import { Races } from "./Races";
 
 export function Event() {
-  const [state, {raceEvents}] = useAppState();
+  const [state, {raceEvents, races}] = useAppState();
 
   const [openSettings, setOpenSettings] = createSignal(false);
 
@@ -28,6 +28,8 @@ export function Event() {
               {(item) => <li>{item.name} {item.status}</li>}
             </For>
           </ul>
+
+          <button onClick={() => races.startRace()}>Start Race</button>
         </Show>
       </Match>
       <Match when={openSettings()}>

@@ -110,10 +110,25 @@ async fn find_race_event_details(
     receiver.await.unwrap()
 }
 
+#[tauri::command]
+async fn start_race(
+    state: tauri::State<'_, LocalState>
+) -> Result<(), ErrorMessage> {
+    let (request, receiver) = InvokeRequest::new(());
+    let mut lock = state.dispatch.lock().await;
+    lock.send(core::Actions::StartRace(request))
+        .await
+        .map_err(|e| e.to_string())
+        .unwrap();
+
+    receiver.await.unwrap()
+}
+
 fn main() {
     let mut state = core::State::init(Db::init());
 
     let (dispatch, listener) = mpsc::channel(5);
+    let (device_tx, device_rx) = mpsc::channel(5);
 
     let token = tokio_util::sync::CancellationToken::new();
     let cloned_token = token.clone();
@@ -126,6 +141,7 @@ fn main() {
             create_race_event,
             remove_race_event,
             find_race_event_details,
+            start_race,
         ])
         .manage(LocalState {
             dispatch: Arc::new(Mutex::new(dispatch.clone())),
@@ -141,13 +157,13 @@ fn main() {
             // let app_handle = app.handle();
 
             tauri::async_runtime::spawn(async move {
-                core::update_state(&mut state, listener).await;
+                core::update_state(&mut state, listener, device_tx).await;
             });
 
             tauri::async_runtime::spawn(async move {
                 select! {
                     _ = cloned_token.cancelled() => {}
-                    _ = device::process_data() => {}
+                    _ = device::process_data(device_rx) => {}
                 }
             });
 

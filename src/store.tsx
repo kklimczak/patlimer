@@ -63,6 +63,9 @@ function stateProviderFactory(initialState: State) {
           .then((newRace: Race) => {
             setState("races", oldRaces => ([...oldRaces, newRace]))
           });
+      },
+      startRace() {
+        invoke<any>('start_race', {}).then(console.log);
       }
     }
   }

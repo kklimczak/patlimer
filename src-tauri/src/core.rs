@@ -12,6 +12,7 @@ use tauri::Manager;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::oneshot;
 use crate::db::Db;
+use crate::device::Commands;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Pilot {
@@ -214,9 +215,10 @@ pub enum Actions {
     RemoveRaceEvent(InvokeRequest<i64, ()>),
     AddPilot(InvokeRequest<NewPilotDto, Pilot>),
     AddRace(InvokeRequest<NewRaceDto, Race>),
+    StartRace(InvokeRequest<(), ()>),
 }
 
-pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
+pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>, device_tx: Sender<Commands>) {
     let db = Db::new("db".to_string());
 
     while let Some(action) = rx.recv().await {
@@ -284,6 +286,10 @@ pub async fn update_state(state: &mut State, mut rx: Receiver<Actions>) {
             Actions::RemoveRaceEvent(invoke_request) => {
                 state.race_events.remove(state.race_events.iter().position(|x| x.id == invoke_request.body).unwrap());
                 db.remove_race_event(invoke_request.body);
+                invoke_request.response_tx.send(Ok(())).unwrap();
+            }
+            Actions::StartRace(invoke_request) => {
+                device_tx.send(Commands::StartRace).await.unwrap();
                 invoke_request.response_tx.send(Ok(())).unwrap();
             }
         }
